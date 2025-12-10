@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PM2.5 Forecast Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+}
+
+/* Header Styles */
+header {
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    padding: 1rem 0;
+}
+
+.header-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-icon::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+.logo-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+/* Navigation */
+nav {
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.nav-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-tab {
+    padding: 1rem 0.5rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s;
+    text-decoration: none;
+}
+
+.nav-tab:hover {
+    color: #cbd5e1;
+}
+
+.nav-tab.active {
+    color: #06b6d4;
+}
+
+.nav-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #06b6d4, #3b82f6);
+}
+
+/* Main Content */
+main {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+h1 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #cbd5e1;
+    margin-bottom: 2rem;
+}
+
+.card {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.controls-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.sensor-selector, .chart-type-selector {
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    border-radius: 0.5rem;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.sensor-selector {
+    flex: 1;
+    min-width: 250px;
+}
+
+.chart-type-selector {
+    flex: 0 0 200px;
+}
+
+.sensor-selector:hover, .chart-type-selector:hover {
+    border-color: #06b6d4;
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.sensor-selector:focus, .chart-type-selector:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+.chart-container {
+    position: relative;
+    height: 500px;
+}
+</style>
+</head>
+<body>
+<!-- Header -->
+<header>
+    <div class="header-content">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <span class="logo-text">Yerevan Air Quality Index</span>
+        </div>
+    </div>
+</header>
+<!-- Navigation -->
+<nav>
+    <div class="nav-content">
+        <div class="nav-tabs">
+            <a href="/" class="nav-tab">Overview</a>
+            <a href="history" class="nav-tab">History</a>
+            <a href="/forecast" class="nav-tab active">Forecast</a>
+            <a href="#" class="nav-tab">Map</a>
+            <a href="#" class="nav-tab">Sources</a>
+        </div>
+    </div>
+</nav>
+<!-- Main Content -->
+<main>
+    <h1>PM2.5 Forecast</h1>
+    <div class="card">
+        <h2 class="card-title">PM2.5 Actual vs. Predicted (Last 7 Days + 7 Day Forecast)</h2>
+
+        <div class="controls-container">
+            <select id="sensorSelect" class="sensor-selector">
+                {% for sensor_id in sensor_ids %}
+                <option value="{{ sensor_id }}">Sensor {{ sensor_id }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="chartTypeSelect" class="chart-type-selector">
+                <option value="line">Line Chart</option>
+                <option value="bar">Bar Chart</option>
+                <option value="area">Area Chart</option>
+                <option value="radar">Radar Chart</option>
+            </select>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="forecastChart"></canvas>
+        </div>
+    </div>
+</main>
+<script>
+// Data from Flask
+const forecastData = JSON.parse('{{ forecast_data_json | safe }}');
+const sensorIds = Object.keys(forecastData);
+
+// Chart.js defaults
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+
+let currentChartType = 'line';
+<!--let currentSensor = sensorIds[0];-->
+let currentSensor = document.getElementById('sensorSelect').value;
+
+function updateForecastChart(sensor_id, chartType) {
+    const data = forecastData[sensor_id];
+    if (!data) return;
+
+    const labels = data.actual_labels.concat(data.future_labels);
+    const actualData = data.actual_values.concat(Array(data.future_values.length).fill(null));
+    const predictedData = Array(data.actual_values.length).fill(null).concat(data.future_values);
+
+    const lastActual = data.actual_values[data.actual_values.length - 1];
+    predictedData[data.actual_values.length - 1] = lastActual;
+
+    // Common dataset configuration
+    const baseConfig = {
+        actual: {
+            label: 'Actual PM2.5',
+            data: actualData,
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.3)',
+        },
+        predicted: {
+            label: 'Predicted PM2.5',
+            data: predictedData,
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.3)',
+        }
+    };
+
+    let datasets = [];
+    let chartConfig = {};
+
+    // Configure based on chart type
+    switch(chartType) {
+        case 'line':
+            datasets = [
+                {
+                    ...baseConfig.actual,
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    borderWidth: 2,
+                },
+                {
+                    ...baseConfig.predicted,
+                    borderDash: [5, 5],
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    borderWidth: 2,
+                }
+            ];
+            chartConfig.type = 'line';
+            break;
+
+        case 'bar':
+            datasets = [
+                {
+                    ...baseConfig.actual,
+                    backgroundColor: 'rgba(6, 182, 212, 0.6)',
+                    borderWidth: 1,
+                },
+                {
+                    ...baseConfig.predicted,
+                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                    borderWidth: 1,
+                }
+            ];
+            chartConfig.type = 'bar';
+            break;
+
+        case 'area':
+            datasets = [
+                {
+                    ...baseConfig.actual,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                },
+                {
+                    ...baseConfig.predicted,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                }
+            ];
+            chartConfig.type = 'line';
+            break;
+
+        case 'radar':
+            // For radar, we need to limit the number of points
+            const maxPoints = 20;
+            const step = Math.ceil(labels.length / maxPoints);
+            const radarLabels = labels.filter((_, i) => i % step === 0);
+            const radarActual = actualData.filter((_, i) => i % step === 0);
+            const radarPredicted = predictedData.filter((_, i) => i % step === 0);
+
+            datasets = [
+                {
+                    ...baseConfig.actual,
+                    data: radarActual,
+                    fill: true,
+                    pointRadius: 3,
+                    borderWidth: 2,
+                },
+                {
+                    ...baseConfig.predicted,
+                    data: radarPredicted,
+                    fill: true,
+                    pointRadius: 3,
+                    borderWidth: 2,
+                }
+            ];
+            chartConfig.type = 'radar';
+            chartConfig.labels = radarLabels;
+            break;
+    }
+
+    const chartData = {
+        labels: chartType === 'radar' ? chartConfig.labels : labels,
+        datasets: datasets
+    };
+
+    // Scale configuration
+    const scalesConfig = chartType === 'radar' ? {
+        r: {
+            beginAtZero: true,
+            ticks: { color: '#d9e2ef' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            pointLabels: { color: '#d9e2ef', font: { size: 10 } }
+        }
+    } : {
+        x: {
+            ticks: { color: '#d9e2ef' },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+        },
+        y: {
+            beginAtZero: true,
+            title: {
+                display: true,
+                text: 'PM2.5 (µg/m³)',
+                color: '#d9e2ef'
+            },
+            ticks: { color: '#d9e2ef' },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+        }
+    };
+
+    if (window.forecastChartInstance) {
+        window.forecastChartInstance.destroy();
+    }
+
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    window.forecastChartInstance = new Chart(ctx, {
+        type: chartConfig.type,
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    padding: 12
+                },
+                legend: {
+                    labels: { color: '#d9e2ef', font: { size: 14 } }
+                }
+            },
+            scales: scalesConfig
+        }
+    });
+}
+
+// Sensor Selection
+document.getElementById('sensorSelect').addEventListener('change', (e) => {
+    currentSensor = e.target.value;
+    updateForecastChart(currentSensor, currentChartType);
+});
+
+// Chart Type Selection
+document.getElementById('chartTypeSelect').addEventListener('change', (e) => {
+    currentChartType = e.target.value;
+    updateForecastChart(currentSensor, currentChartType);
+});
+
+// Initial Load
+if (currentSensor) {
+    updateForecastChart(currentSensor, currentChartType);
+}
+</script>
+</body>
+</html>

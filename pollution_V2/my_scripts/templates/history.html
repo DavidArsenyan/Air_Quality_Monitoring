@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Historical Data Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+}
+
+header {
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    padding: 1rem 0;
+}
+
+.header-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-icon::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+.logo-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+nav {
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.nav-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-tab {
+    padding: 1rem 0.5rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s;
+    text-decoration: none;
+}
+
+.nav-tab:hover {
+    color: #cbd5e1;
+}
+
+.nav-tab.active {
+    color: #06b6d4;
+}
+
+.nav-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #06b6d4, #3b82f6);
+}
+
+main {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+h1 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #cbd5e1;
+    margin-bottom: 2rem;
+}
+
+.card {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    margin-bottom: 1.5rem;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.sensor-selector {
+    width: 100%;
+    max-width: 400px;
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    border-radius: 0.5rem;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.sensor-selector:hover {
+    border-color: #06b6d4;
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.sensor-selector:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #06b6d4;
+    display: block;
+}
+
+.stat-unit {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin-top: 1rem;
+}
+
+.distribution-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .distribution-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <span class="logo-text">Yerevan Air Quality Index</span>
+        </div>
+    </div>
+</header>
+
+<nav>
+    <div class="nav-content">
+        <div class="nav-tabs">
+            <a href="/" class="nav-tab">Overview</a>
+            <a href="/history" class="nav-tab active">History</a>
+            <a href="/forecast" class="nav-tab">Forecast</a>
+            <a href="#" class="nav-tab">Map</a>
+            <a href="#" class="nav-tab">Sources</a>
+        </div>
+    </div>
+</nav>
+
+<main>
+    <h1>Historical Data Analysis</h1>
+
+    <div class="card">
+        <h2 class="card-title">Select Sensor</h2>
+        <select id="sensorSelect" class="sensor-selector">
+            {% for sensor_id in sensor_ids %}
+            <option value="{{ sensor_id }}">Sensor {{ sensor_id }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">Statistical Summary</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Mean</div>
+                <span class="stat-value" id="meanValue">--</span>
+                <span class="stat-unit">µg/m³</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Median</div>
+                <span class="stat-value" id="medianValue">--</span>
+                <span class="stat-unit">µg/m³</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Std Deviation</div>
+                <span class="stat-value" id="stdValue">--</span>
+                <span class="stat-unit">µg/m³</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Variance</div>
+                <span class="stat-value" id="varianceValue">--</span>
+                <span class="stat-unit">µg/m³²</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Minimum</div>
+                <span class="stat-value" id="minValue">--</span>
+                <span class="stat-unit">µg/m³</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Maximum</div>
+                <span class="stat-value" id="maxValue">--</span>
+                <span class="stat-unit">µg/m³</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">25th Percentile</div>
+                <span class="stat-value" id="q25Value">--</span>
+                <span class="stat-unit">µg/m³</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">75th Percentile</div>
+                <span class="stat-value" id="q75Value">--</span>
+                <span class="stat-unit">µg/m³</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Data Points</div>
+                <span class="stat-value" id="countValue">--</span>
+                <span class="stat-unit">readings</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">Historical PM2.5 Time Series</h2>
+        <div class="chart-container">
+            <canvas id="timeSeriesChart"></canvas>
+        </div>
+    </div>
+
+    <div class="distribution-grid">
+        <div class="card">
+            <h2 class="card-title">PM2.5 Distribution (Histogram)</h2>
+            <div class="chart-container">
+                <canvas id="histogramChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Box Plot Distribution</h2>
+            <div class="chart-container">
+                <canvas id="boxPlotChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+// Data from Flask
+const sensorStats = JSON.parse('{{ sensor_stats_json | safe }}');
+const sensorData = JSON.parse('{{ sensor_data_json | safe }}');
+const sensorIds = Object.keys(sensorStats);
+
+// Chart.js defaults
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+
+let timeSeriesChart, histogramChart, boxPlotChart;
+
+function updateStatistics(sensorId) {
+    const stats = sensorStats[sensorId];
+    if (!stats) return;
+
+    document.getElementById('meanValue').textContent = stats.mean;
+    document.getElementById('medianValue').textContent = stats.median;
+    document.getElementById('stdValue').textContent = stats.std;
+    document.getElementById('varianceValue').textContent = stats.variance;
+    document.getElementById('minValue').textContent = stats.min;
+    document.getElementById('maxValue').textContent = stats.max;
+    document.getElementById('q25Value').textContent = stats.q25;
+    document.getElementById('q75Value').textContent = stats.q75;
+    document.getElementById('countValue').textContent = stats.count;
+}
+
+function updateTimeSeriesChart(sensorId) {
+    const data = sensorData[sensorId];
+    if (!data) return;
+
+    const chartData = {
+        labels: data.dates,
+        datasets: [{
+            label: 'PM2.5 Level',
+            data: data.values,
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 1,
+            borderWidth: 2
+        }]
+    };
+
+    if (timeSeriesChart) {
+        timeSeriesChart.data = chartData;
+        timeSeriesChart.update();
+    } else {
+        const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+        timeSeriesChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        padding: 12
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#d9e2ef',
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'PM2.5 (µg/m³)',
+                            color: '#d9e2ef'
+                        },
+                        ticks: { color: '#d9e2ef' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            }
+        });
+    }
+}
+
+function updateHistogram(sensorId) {
+    const data = sensorData[sensorId];
+    if (!data) return;
+
+    const values = data.values;
+    const bins = 20;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const binWidth = (max - min) / bins;
+
+    const histogram = new Array(bins).fill(0);
+    const binLabels = [];
+
+    for (let i = 0; i < bins; i++) {
+        const binStart = min + i * binWidth;
+        const binEnd = binStart + binWidth;
+        binLabels.push(`${binStart.toFixed(1)}-${binEnd.toFixed(1)}`);
+
+        for (const value of values) {
+            if (value >= binStart && value < binEnd) {
+                histogram[i]++;
+            }
+        }
+    }
+
+    const chartData = {
+        labels: binLabels,
+        datasets: [{
+            label: 'Frequency',
+            data: histogram,
+            backgroundColor: 'rgba(6, 182, 212, 0.6)',
+            borderColor: '#06b6d4',
+            borderWidth: 1
+        }]
+    };
+
+    if (histogramChart) {
+        histogramChart.data = chartData;
+        histogramChart.update();
+    } else {
+        const ctx = document.getElementById('histogramChart').getContext('2d');
+        histogramChart = new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        padding: 12
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#d9e2ef',
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: { size: 9 }
+                        },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Frequency',
+                            color: '#d9e2ef'
+                        },
+                        ticks: { color: '#d9e2ef' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            }
+        });
+    }
+}
+
+function updateBoxPlot(sensorId) {
+    const stats = sensorStats[sensorId];
+    if (!stats) return;
+
+    const chartData = {
+        labels: ['PM2.5 Distribution'],
+        datasets: [{
+            label: 'PM2.5',
+            data: [{
+                min: stats.min,
+                q1: stats.q25,
+                median: stats.median,
+                q3: stats.q75,
+                max: stats.max
+            }],
+            backgroundColor: 'rgba(6, 182, 212, 0.3)',
+            borderColor: '#06b6d4',
+            borderWidth: 2
+        }]
+    };
+
+    if (boxPlotChart) {
+        boxPlotChart.destroy();
+    }
+
+    const ctx = document.getElementById('boxPlotChart').getContext('2d');
+
+    // Custom box plot using bar chart
+    boxPlotChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Min', 'Q1', 'Median', 'Q3', 'Max'],
+            datasets: [{
+                label: 'Value',
+                data: [stats.min, stats.q25, stats.median, stats.q75, stats.max],
+                backgroundColor: [
+                    'rgba(239, 68, 68, 0.6)',
+                    'rgba(251, 191, 36, 0.6)',
+                    'rgba(6, 182, 212, 0.6)',
+                    'rgba(251, 191, 36, 0.6)',
+                    'rgba(239, 68, 68, 0.6)'
+                ],
+                borderColor: [
+                    '#ef4444',
+                    '#fbbf24',
+                    '#06b6d4',
+                    '#fbbf24',
+                    '#ef4444'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    padding: 12
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#d9e2ef' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'PM2.5 (µg/m³)',
+                        color: '#d9e2ef'
+                    },
+                    ticks: { color: '#d9e2ef' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                }
+            }
+        }
+    });
+}
+
+function updateAllCharts(sensorId) {
+    updateStatistics(sensorId);
+    updateTimeSeriesChart(sensorId);
+    updateHistogram(sensorId);
+    updateBoxPlot(sensorId);
+}
+
+// Sensor selection handler
+document.getElementById('sensorSelect').addEventListener('change', (e) => {
+    updateAllCharts(e.target.value);
+});
+
+// Initial load
+if (sensorIds.length > 0) {
+<!--    updateAllCharts(sensorIds[0]);-->
+const initialSensor = document.getElementById('sensorSelect').value;
+updateAllCharts(initialSensor);
+
+}
+</script>
+
+</body>
+</html>

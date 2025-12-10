@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Yerevan Air Quality Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.1.0/dist/chartjs-chart-matrix.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+}
+
+/* Header Styles */
+header {
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    padding: 1rem 0;
+}
+
+.header-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-icon::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+.logo-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+/* Navigation */
+nav {
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.nav-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-tab {
+    padding: 1rem 0.5rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s;
+    text-decoration: none;
+}
+
+.nav-tab:hover {
+    color: #cbd5e1;
+}
+
+.nav-tab.active {
+    color: #06b6d4;
+}
+
+.nav-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #06b6d4, #3b82f6);
+}
+
+/* Main Content */
+main {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+h1 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #cbd5e1;
+    margin-bottom: 2rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.card {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+/* Sensor Selector */
+.sensor-selector {
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    border-radius: 0.5rem;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.sensor-selector:hover {
+    border-color: #06b6d4;
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.sensor-selector:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+/* Best/Worst Stats */
+.stats-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.stat-panel {
+    text-align: center;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    display: block;
+    margin: 0.5rem 0;
+}
+
+.stat-best .stat-value {
+    color: #10b981;
+}
+
+.stat-worst .stat-value {
+    color: #ef4444;
+}
+
+.stat-date {
+    font-size: 0.875rem;
+    color: #cbd5e1;
+    margin-top: 0.25rem;
+}
+
+.stat-unit {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+/* Chart Containers */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: 1rem;
+}
+
+.heatmap-container {
+    position: relative;
+    height: 400px;
+    margin-top: 1rem;
+}
+
+/* Color Legend */
+.color-legend {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    margin-right: 0.5rem;
+}
+
+/* Map Styles */
+.map-wrapper {
+    margin-top: 1rem;
+}
+
+.search-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 0.5rem;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+.search-btn {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    border: none;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.search-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+}
+
+.search-btn:active {
+    transform: translateY(0);
+}
+
+#map {
+    height: 400px;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+/* Grid Layout */
+.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Heatmap + Map Grid */
+.heatmap-map-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    grid-column: 1 / -1;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-container {
+        grid-template-columns: 1fr;
+    }
+
+    .heatmap-map-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Header -->
+<header>
+    <div class="header-content">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <span class="logo-text">Yerevan Air Quality Index</span>
+        </div>
+    </div>
+</header>
+
+<!-- Navigation -->
+<nav>
+    <div class="nav-content">
+        <div class="nav-tabs">
+            <a href="/" class="nav-tab active">Overview</a>
+            <a href="/history" class="nav-tab">History</a>
+            <a href="/forecast" class="nav-tab">Forecast</a>
+            <a href="#" class="nav-tab">Map</a>
+            <a href="#" class="nav-tab">Sources</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main>
+    <h1>Air Quality Dashboard</h1>
+
+    <div class="dashboard-grid">
+
+        <!-- Best/Worst Records Card -->
+        <div class="card">
+            <h2 class="card-title">PM2.5 All-Time Daily Records</h2>
+            <select id="sensorSelect" class="sensor-selector">
+                {% for sensor_id in sensor_ids %}
+                <option value="{{ sensor_id }}">Sensor {{ sensor_id }}</option>
+                {% endfor %}
+            </select>
+
+            <div class="stats-container">
+                <div class="stat-panel stat-best">
+                    <div class="stat-label">Best Day</div>
+                    <span class="stat-value" id="bestValue">--</span>
+                    <span class="stat-unit">μg/m³</span>
+                    <div class="stat-date" id="bestDate">--/--/--</div>
+                </div>
+
+                <div class="stat-panel stat-worst">
+                    <div class="stat-label">Worst Day</div>
+                    <span class="stat-value" id="worstValue">--</span>
+                    <span class="stat-unit">μg/m³</span>
+                    <div class="stat-date" id="worstDate">--/--/--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PM2.5 Levels Chart -->
+        <div class="card">
+            <h2 class="card-title">PM2.5 Levels (Last 7 Days)</h2>
+            <div class="chart-container">
+                <canvas id="pm25Chart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Heatmap and Map Side by Side -->
+    <div class="heatmap-map-grid">
+        <!-- Calendar Heatmap -->
+        <div class="card">
+            <h2 class="card-title">PM2.5 Daily Heatmap (Last 30 Days)</h2>
+
+            <div class="color-legend">
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color:#67a960;"></span>
+                    0-12.0 Good
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color:#a3c85a;"></span>
+                    12.1-35.4 Moderate
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color:#f4c759;"></span>
+                    35.5-55.4 Sensitive
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color:#f4a65a;"></span>
+                    55.5-150.4 Unhealthy
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color:#c46675;"></span>
+                    150.5-250.4 Very Unhealthy
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color:#9c7391;"></span>
+                    >250.5 Hazardous
+                </div>
+            </div>
+
+            <div class="heatmap-container">
+                <canvas id="calendarHeatmap"></canvas>
+            </div>
+        </div>
+
+        <!-- Map Card -->
+        <div class="card">
+            <h2 class="card-title">Station Locations</h2>
+            <div class="map-wrapper">
+                <div class="search-bar">
+                    <input id="addressInput" class="search-input" placeholder="Enter address to search..."/>
+                    <button onclick="searchAddress()" class="search-btn">Search</button>
+                </div>
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+// Data from Flask
+const sensorData = JSON.parse('{{ all_sensors_json | safe }}');
+const labels7 = JSON.parse('{{ labels_7d | safe }}');
+const heatmapMatrixData = JSON.parse('{{ heatmap_matrix_data | safe }}');
+const sensorLocations = JSON.parse('{{ sensor_locations_json | safe }}');
+const historicalRecords = JSON.parse('{{ historical_records_json | safe }}');
+
+// Chart.js defaults
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+
+// Update Best/Worst Indicators
+function updateBestWorstIndicators(sensor_id) {
+    const records = historicalRecords[sensor_id];
+
+    if (!records || !records.best_v) {
+        document.getElementById('bestValue').textContent = '--';
+        document.getElementById('worstValue').textContent = '--';
+        document.getElementById('bestDate').textContent = '--/--/--';
+        document.getElementById('worstDate').textContent = '--/--/--';
+        return;
+    }
+
+    const formatDate = (dateStr) => {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[1]}-${parts[2]}-${parts[0]}`;
+        }
+        return dateStr;
+    };
+
+    document.getElementById('bestValue').textContent = records.best_v.toFixed(1);
+    document.getElementById('worstValue').textContent = records.worst_v.toFixed(1);
+    document.getElementById('bestDate').textContent = formatDate(records.best_d);
+    document.getElementById('worstDate').textContent = formatDate(records.worst_d);
+}
+
+// PM2.5 Line Chart
+const ctx = document.getElementById('pm25Chart').getContext('2d');
+let pm25Chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels7,
+        datasets: [{
+            label: 'PM2.5',
+<!--            data: sensorData[Object.keys(sensorData)[0]],-->
+            data: sensorData[document.getElementById('sensorSelect').value],
+
+            borderColor: '#06b6d4',
+
+            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#06b6d4',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#1e293b',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 12
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#d9e2ef' },
+                grid: { color: 'rgba(255,255,255,0.1)' }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: { color: '#d9e2ef' },
+                grid: { color: 'rgba(255,255,255,0.1)' }
+            }
+        }
+    }
+});
+
+// Heatmap Functions
+function getMatrixData(sensor_id) {
+    const data = heatmapMatrixData[sensor_id] || [];
+    return data.filter(point => point.v !== null && point.v !== undefined);
+}
+
+const calendarCtx = document.getElementById('calendarHeatmap').getContext('2d');
+const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+let calendarHeatmap = new Chart(calendarCtx, {
+    type: 'matrix',
+    data: {
+        datasets: [{
+            label: 'PM2.5',
+            data: getMatrixData(Object.keys(heatmapMatrixData)[0]),
+            backgroundColor: function(ctx) {
+                const v = ctx.dataset.data[ctx.dataIndex].v;
+                if (v <= 12.0) return '#67a960';
+                if (v <= 35.4) return '#a3c85a';
+                if (v <= 55.4) return '#f4c759';
+                if (v <= 150.4) return '#f4a65a';
+                if (v <= 250.4) return '#c46675';
+                return '#9c7391';
+            },
+            width: ({ chart }) => (chart.chartArea || {}).width / 30 - 2,
+            height: ({ chart }) => (chart.chartArea || {}).height / 7 - 2,
+            borderColor: '#1e293b',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            tooltip: {
+                backgroundColor: '#1e293b',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 12,
+                callbacks: {
+                    title: function(ctx) {
+                        const d = ctx[0].dataset.data[ctx[0].dataIndex];
+                        return `${d.d} (${dayLabels[d.y]})`;
+                    },
+                    label: function(ctx) {
+                        return `PM2.5: ${ctx.dataset.data[ctx.dataIndex].v} µg/m³`;
+                    }
+                }
+            },
+            legend: { display: false }
+        },
+        scales: {
+            x: {
+                type: 'linear',
+                min: 0,
+                max: 29,
+                grid: { display: false },
+                ticks: {
+                    color: '#d9e2ef',
+                    font: { size: 12 }
+                }
+            },
+            y: {
+                type: 'linear',
+                min: -0.5,
+                max: 6.5,
+                reverse: true,
+                ticks: {
+                    color: '#d9e2ef',
+                    font: { size: 12 },
+                    callback: function(value) {
+                        return dayLabels[value] ?? '';
+                    }
+                },
+                grid: { display: false }
+            }
+        }
+    }
+});
+
+// Map Setup
+var map = L.map('map').setView([40.1772, 44.5035], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+let sensorMarker = null;
+
+async function updateSensorMarker(sensor_id) {
+    const address = sensorLocations[sensor_id];
+    if (!address) return;
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+    const response = await fetch(url);
+    const results = await response.json();
+    if (results.length === 0) return;
+
+    const lat = parseFloat(results[0].lat);
+    const lon = parseFloat(results[0].lon);
+
+    if (!sensorMarker) {
+        sensorMarker = L.marker([lat, lon]).addTo(map);
+    } else {
+        sensorMarker.setLatLng([lat, lon]);
+    }
+
+    sensorMarker.bindPopup(`<b>Sensor ${sensor_id}</b><br>${address}`).openPopup();
+    map.setView([lat, lon], 14);
+}
+
+let searchMarker = null;
+async function searchAddress() {
+    const address = document.getElementById("addressInput").value;
+    if (!address) return;
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+    const response = await fetch(url);
+    const results = await response.json();
+    if (results.length === 0) {
+        alert('Address not found');
+        return;
+    }
+
+    const lat = parseFloat(results[0].lat);
+    const lon = parseFloat(results[0].lon);
+
+    map.setView([lat, lon], 16);
+
+    if (!searchMarker) {
+        searchMarker = L.marker([lat, lon]).addTo(map);
+    } else {
+        searchMarker.setLatLng([lat, lon]);
+    }
+
+    searchMarker.bindPopup(address).openPopup();
+}
+
+// Sensor Selection Handler
+document.getElementById('sensorSelect').addEventListener('change', (e) => {
+    const sensor = e.target.value;
+
+    // Update Line Chart
+    pm25Chart.data.datasets[0].data = sensorData[sensor];
+    pm25Chart.update();
+
+    // Update Heatmap
+    calendarHeatmap.data.datasets[0].data = getMatrixData(sensor);
+    calendarHeatmap.update();
+
+    // Update Best/Worst
+    updateBestWorstIndicators(sensor);
+
+    // Update Map
+    updateSensorMarker(sensor);
+});
+
+// Initial Load
+<!--const initialSensor = Object.keys(sensorData)[0];-->
+const initialSensor = document.getElementById('sensorSelect').value;
+
+if (initialSensor) {
+    updateBestWorstIndicators(initialSensor);
+    updateSensorMarker(initialSensor);
+}
+</script>
+</body>
+</html>
