@@ -1,10 +1,8 @@
 import os
 import pandas as pd
 
-# Folder containing daily sensor CSVs
 data_folder = "../data/daily_data"
 
-# Minimum number of days required per sensor
 min_days = 120
 
 # Step 1: Read all CSVs and store PM2.5 sensors only
@@ -14,14 +12,14 @@ for file in os.listdir(data_folder):
         sensor_id = int(file.split("_")[1].split(".")[0])
         df = pd.read_csv(os.path.join(data_folder, file))
 
-        # ---- FILTER: KEEP ONLY PM2.5 ----
+        #  FILTER: KEEP ONLY PM2.5
         if "parameter" not in df.columns:
             continue  # skip weird files
 
         if df["parameter"].iloc[0].lower() != "pm25":
             continue  # skip UM003, PM10, etc.
 
-        df["datetime_from_local"] = pd.to_datetime(df["datetime_from_local"])
+        df["datetime_from_local"] = pd.to_datetime(df["datetime_from_local"]) # make the dates into datetime format
         df["datetime_to_local"] = pd.to_datetime(df["datetime_to_local"])
         df["sensor_id"] = sensor_id
         sensor_dfs[sensor_id] = df
