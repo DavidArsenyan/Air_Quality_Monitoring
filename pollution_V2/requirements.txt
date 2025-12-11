@@ -1,0 +1,9 @@
+pandas
+numpy
+tensorflow
+scikit-learn
+flask
+openaq
+matplotlib
+datetime
+os
