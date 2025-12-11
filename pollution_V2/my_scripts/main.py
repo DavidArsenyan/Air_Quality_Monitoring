@@ -5,8 +5,8 @@ import pandas as pd
 client = OpenAQ("f2ae9f923f46869d0254a8f714b115d8ff9b26ae25178ab506172346f487455b")
 
 locations = client.locations.list(
-    bbox=(44.40, 40.10, 44.65, 40.32),
-    limit=100
+    bbox=(44.40, 40.10, 44.65, 40.32),  # The bbox defines a rectangular geographic area to limit the search.
+    limit=100 # sets the maximum number of locations to retrieve.
 )
 
 rows = []
